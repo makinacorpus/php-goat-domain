@@ -1,0 +1,45 @@
+version: '3.7'
+services:
+    postgres:
+        image: postgres:14
+        env_file: [docker.env]
+        restart: "no"
+
+    php74:
+        image: php:7.4-cli
+        depends_on:
+            - postgres
+        build:
+            context: .
+            dockerfile: ./Dockerfile-7.4
+        restart: "no"
+        env_file: [docker.env]
+        working_dir: /var/code
+        volumes:
+            - "${APP_DIR}:/var/code"
+
+    php80:
+        image: php:8.0-cli
+        depends_on:
+            - postgres
+        build:
+            context: .
+            dockerfile: ./Dockerfile-8.0
+        restart: "no"
+        env_file: [docker.env]
+        working_dir: /var/code
+        volumes:
+            - "${APP_DIR}:/var/code"
+
+    php81:
+        image: php:8.1-cli
+        depends_on:
+            - postgres
+        build:
+            context: .
+            dockerfile: ./Dockerfile-8.1
+        restart: "no"
+        env_file: [docker.env]
+        working_dir: /var/code
+        volumes:
+            - "${APP_DIR}:/var/code"

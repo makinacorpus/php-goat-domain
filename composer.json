@@ -1,0 +1,61 @@
+{
+    "name" : "makinacorpus/goat-domain",
+    "type": "library",
+    "description": "Legacy code for implementing entity repositories, alive only for legacy projects maintainance purpose.",
+    "keywords": ["orm", "postgresql", "mysql", "database", "symfony", "pdo"],
+    "homepage": "http://github.com/makinacorpus/php-goat-domain",
+    "license": "GPL-2.0-or-later",
+    "authors": [
+        {
+            "name" : "Pierre RINEAU",
+            "email" : "pierre.rineau@processus.org"
+        },
+        {
+            "name" : "Régis LEROY",
+            "email" : "regis.leroy@makina-corpus.com",
+            "role": "Developer"
+        },
+        {
+            "name" : "Simon MELLERIN",
+            "email" : "simon.mellerin@makina-corpus.com",
+            "role": "Developer"
+        },
+        {
+            "name" : "Makina Corpus",
+            "homepage" : "https://www.makina-corpus.com"
+        }
+    ],
+    "minimum-stability" : "dev",
+    "prefer-stable" : true,
+    "autoload" : {
+        "psr-4" : {
+            "Goat\\Domain\\" : "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Goat\\Domain\\Tests\\": "tests/"
+        }
+    },
+    "config": {
+        "platform": {
+            "php": "7.4"
+        }
+    },
+    "replace": {
+        "makinacorpus/generated-hydrator": "*",
+        "makinacorpus/goat-hydrator": "*"
+    },
+    "require" : {
+        "makinacorpus/goat-query": "^2.1.7 || ^3.0 || ^4.0",
+        "php" : ">=7.4",
+        "ramsey/uuid": "^3.8 || ^4.0"
+    },
+    "require-dev" : {
+        "makinacorpus/generated-hydrator-bundle": "^1.0@alpha",
+        "makinacorpus/goat-query-bundle": ">=2.0",
+        "phpunit/phpunit": "^9",
+        "ocramius/generated-hydrator": "^3",
+        "psr/log": "^1"
+    }
+}
