@@ -7,8 +7,6 @@ namespace Goat\Domain\Repository;
 use Goat\Driver\Runner\AbstractRunner;
 use Goat\Query\DeleteQuery;
 use Goat\Query\Expression;
-use Goat\Query\ExpressionColumn;
-use Goat\Query\ExpressionRelation;
 use Goat\Query\InsertQuery;
 use Goat\Query\InsertQueryQuery;
 use Goat\Query\InsertValuesQuery;
@@ -20,6 +18,8 @@ use Goat\Query\SelectQuery;
 use Goat\Query\UpdateQuery;
 use Goat\Query\UpsertQueryQuery;
 use Goat\Query\UpsertValuesQuery;
+use Goat\Query\Expression\ColumnExpression;
+use Goat\Query\Expression\TableExpression;
 use Goat\Runner\ResultIterator;
 use Goat\Runner\Runner;
 use Goat\Runner\Hydrator\HydratorRegistry;
@@ -29,7 +29,6 @@ use Goat\Runner\Hydrator\HydratorRegistry;
  * select query.
  *
  * @codeCoverageIgnore
- * @deprecated
  */
 class DefaultRepository implements GoatRepositoryInterface
 {
@@ -48,7 +47,7 @@ class DefaultRepository implements GoatRepositoryInterface
      *   Class that will be hydrated
      * @param string[] $primaryKey
      *   Column names that is the primary key
-     * @param string|ExpressionRelation $relation
+     * @param string|ColumnExpression $relation
      *   Relation, if a string, no schema nor alias will be used
      */
     public function __construct(Runner $runner, array $primaryKey, $relation)
@@ -56,10 +55,10 @@ class DefaultRepository implements GoatRepositoryInterface
         $this->class = $this->defineClass();
         $this->primaryKey = $primaryKey;
         $this->runner = $runner;
-        if ($relation instanceof ExpressionRelation) {
+        if ($relation instanceof TableExpression) {
             $this->relation = $relation;
         } else {
-            $this->relation = ExpressionRelation::create($relation);
+            $this->relation = new TableExpression($relation);
         }
     }
 
@@ -197,7 +196,7 @@ class DefaultRepository implements GoatRepositoryInterface
 
         $ret = [];
 
-        $relationAlias = $this->getRelation()->getAlias();
+        $relationAlias = $this->getTable()->getAlias();
         foreach (\array_combine($this->primaryKey, $id) as $column => $value) {
             // Repository can choose to actually already have prefixed the column
             // primary key using the alias, let's cover this use case too: this
@@ -233,7 +232,16 @@ class DefaultRepository implements GoatRepositoryInterface
     /**
      * {@inheritdoc}
      */
-    public function getRelation(): ExpressionRelation
+    public function getTable(): TableExpression
+    {
+        return clone $this->relation;
+    }
+
+    /**
+     * {@inheritdoc}
+     * @deprecated
+     */
+    public function getRelation(): TableExpression
     {
         return clone $this->relation;
     }
@@ -247,9 +255,9 @@ class DefaultRepository implements GoatRepositoryInterface
             return $column;
         }
         if (false === \strpos($column, '.')) {
-            return new ExpressionColumn($column, $relationAlias);
+            return new ColumnExpression($column, $relationAlias);
         }
-        return new ExpressionColumn($column);
+        return new ColumnExpression($column);
     }
 
     final function checkIsEligibleToReturning(Query $query): void
@@ -291,15 +299,19 @@ class DefaultRepository implements GoatRepositoryInterface
     {
         $this->checkIsEligibleToReturning($query);
 
-        // @todo Some queries don't support aliasing.
-        $relationAlias = ($relation = $this->getRelation())->getAlias() ?? $relation->getName();
+        // Some queries don't support aliasing.
+        if ($query instanceof InsertQuery) {
+            $relationAlias = $this->getTable()->getName();
+        } else {
+            $relationAlias = ($relation = $this->getTable())->getAlias() ?? $relation->getName();
+        }
 
         if ($columns = $this->defineSelectColumns()) {
             $this->appendColumnsToReturning($query, $columns, $relationAlias);
         } else if ($columns = $this->getColumns()) {
             $this->appendColumnsToReturning($query, $columns, $relationAlias);
         } else {
-            $query->returning(new ExpressionColumn('*', $relationAlias));
+            $query->returning(new ColumnExpression('*', $relationAlias));
         }
 
         $query->setOption('hydrator', $this->getHydratorWithLazyProperties());
@@ -326,14 +338,14 @@ class DefaultRepository implements GoatRepositoryInterface
      */
     protected function configureQueryForHydrationViaSelect(SelectQuery $select): void
     {
-        $relationAlias = ($relation = $this->getRelation())->getAlias() ?? $relation->getName();
+        $relationAlias = ($relation = $this->getTable())->getAlias() ?? $relation->getName();
 
         if ($columns = $this->defineSelectColumns()) {
             $this->appendColumnsToSelect($select, $columns, $relationAlias);
         } else if ($columns = $this->getColumns()) {
             $this->appendColumnsToSelect($select, $columns, $relationAlias);
         } else {
-            $select->column(new ExpressionColumn('*', $relationAlias));
+            $select->column(new ColumnExpression('*', $relationAlias));
         }
 
         $select->setOption('hydrator', $this->getHydratorWithLazyProperties());

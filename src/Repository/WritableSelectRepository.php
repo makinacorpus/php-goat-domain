@@ -11,7 +11,6 @@ use Goat\Runner\Runner;
  * Default implementation for the writable repository trait.
  *
  * @codeCoverageIgnore
- * @deprecated
  */
 class WritableSelectRepository extends WritableDefaultRepository
 {

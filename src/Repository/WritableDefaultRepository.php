@@ -13,7 +13,6 @@ use Goat\Query\UpdateQuery;
  * Default implementation for the writable repository.
  *
  * @codeCoverageIgnore
- * @deprecated
  */
 class WritableDefaultRepository extends DefaultRepository implements WritableRepositoryInterface
 {
@@ -129,7 +128,7 @@ class WritableDefaultRepository extends DefaultRepository implements WritableRep
      */
     public function createUpdate($criteria = null): UpdateQuery
     {
-        $update = $this->getRunner()->getQueryBuilder()->update($this->getRelation());
+        $update = $this->getRunner()->getQueryBuilder()->update($this->getTable());
 
         if ($criteria) {
             $update->whereExpression(RepositoryQuery::expandCriteria($criteria));
@@ -143,7 +142,7 @@ class WritableDefaultRepository extends DefaultRepository implements WritableRep
      */
     public function createDelete($criteria = null): DeleteQuery
     {
-        $update = $this->getRunner()->getQueryBuilder()->delete($this->getRelation());
+        $update = $this->getRunner()->getQueryBuilder()->delete($this->getTable());
 
         if ($criteria) {
             $update->whereExpression(RepositoryQuery::expandCriteria($criteria));
@@ -157,6 +156,6 @@ class WritableDefaultRepository extends DefaultRepository implements WritableRep
      */
     public function createInsert(): InsertQuery
     {
-        return $this->getRunner()->getQueryBuilder()->insert($this->getRelation());
+        return $this->getRunner()->getQueryBuilder()->insert($this->getTable());
     }
 }

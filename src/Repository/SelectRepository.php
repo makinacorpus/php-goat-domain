@@ -12,7 +12,6 @@ use Goat\Runner\Runner;
  * select query.
  *
  * @codeCoverageIgnore
- * @deprecated
  */
 class SelectRepository extends DefaultRepository
 {

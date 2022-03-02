@@ -6,7 +6,6 @@ namespace Goat\Domain\Repository;
 
 /**
  * @codeCoverageIgnore
- * @deprecated
  */
 abstract class AbstractLazyCollection implements \IteratorAggregate, LazyCollection
 {

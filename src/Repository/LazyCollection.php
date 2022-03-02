@@ -6,7 +6,6 @@ namespace Goat\Domain\Repository;
 
 /**
  * @codeCoverageIgnore
- * @deprecated
  */
 interface LazyCollection extends LazyProperty, \Traversable, \ArrayAccess, \Countable
 {

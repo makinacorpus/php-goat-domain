@@ -14,7 +14,6 @@ use Goat\Runner\ResultIterator;
  * be handled by the repository interface.
  *
  * @codeCoverageIgnore
- * @deprecated
  */
 interface RepositoryInterface
 {

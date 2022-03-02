@@ -14,7 +14,6 @@ use Goat\Runner\ResultIterator;
 
 /**
  * @codeCoverageIgnore
- * @deprecated
  */
 final class RepositoryQuery
 {

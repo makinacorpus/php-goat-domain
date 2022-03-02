@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Goat\Domain\Repository;
 
-use Goat\Query\ExpressionRelation;
 use Goat\Query\SelectQuery;
+use Goat\Query\Expression\TableExpression;
 use Goat\Runner\ResultIterator;
 use Goat\Runner\Runner;
 
@@ -17,7 +17,6 @@ use Goat\Runner\Runner;
  * be handled by the repository interface.
  *
  * @codeCoverageIgnore
- * @deprecated
  */
 interface GoatRepositoryInterface extends RepositoryInterface
 {
@@ -32,9 +31,16 @@ interface GoatRepositoryInterface extends RepositoryInterface
     public function getClassName(): string;
 
     /**
-     * Get relation this repository works on
+     * Get table this repository works on.
      */
-    public function getRelation(): ExpressionRelation;
+    public function getTable(): TableExpression;
+
+    /**
+     * Alias of getTable() kept for BC.
+     *
+     * @deprecated
+     */
+    public function getRelation(): TableExpression;
 
     /**
      * Create a select query based upon this repository definition

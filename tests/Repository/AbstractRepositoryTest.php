@@ -7,9 +7,9 @@ namespace Goat\Domain\Tests\Repository;
 use Goat\Domain\Repository\EntityNotFoundError;
 use Goat\Domain\Repository\GoatRepositoryInterface;
 use Goat\Domain\Repository\WritableRepositoryInterface;
-use Goat\Query\ExpressionRaw;
 use Goat\Query\QueryError;
 use Goat\Query\Where;
+use Goat\Query\Expression\RawExpression;
 use Goat\Runner\DatabaseError;
 use Goat\Runner\Runner;
 use Goat\Runner\Testing\DatabaseAwareQueryTest;
@@ -133,14 +133,14 @@ abstract class AbstractRepositoryTest extends DatabaseAwareQueryTest
         $runner = $factory->getRunner();
 
         $repository = $this->createRepository($runner, DomainModelObject::class, ['t.id']);
-        $relation = $repository->getRelation();
+        $relation = $repository->getTable();
         $this->assertSame('some_entity', $relation->getName());
         $this->assertSame('t', $relation->getAlias());
         $this->assertSame(DomainModelObject::class, $repository->getClassName());
         $this->assertSame($runner, $repository->getRunner());
 
         $repository = $this->createWritableRepository($runner, DomainModelObject::class, ['t.id']);
-        $relation = $repository->getRelation();
+        $relation = $repository->getTable();
         $this->assertSame('some_entity', $relation->getName());
         $this->assertSame('t', $relation->getAlias());
         $this->assertSame(DomainModelObject::class, $repository->getClassName());
@@ -270,7 +270,7 @@ abstract class AbstractRepositoryTest extends DatabaseAwareQueryTest
         }
 
         // Using a single expression
-        $result = $repository->query(new ExpressionRaw('id_user = ?', [self::ID_ADMIN]))->execute();
+        $result = $repository->query(new RawExpression('id_user = ?', [self::ID_ADMIN]))->execute();
         $this->assertCount(7, $result);
         foreach ($result as $item) {
             $this->assertTrue($item instanceof DomainModelObject);
@@ -295,7 +295,7 @@ abstract class AbstractRepositoryTest extends DatabaseAwareQueryTest
         $result = $repository
             ->query([
                 'id_user' => self::ID_JEAN,
-                new ExpressionRaw('baz < ?', [new \DateTime("now -1 second")])
+                new RawExpression('baz < ?', [new \DateTime("now -1 second")])
             ])
             ->execute()
         ;
@@ -349,7 +349,7 @@ abstract class AbstractRepositoryTest extends DatabaseAwareQueryTest
 
         // Using a single expression
         $result = $repository
-            ->query(new ExpressionRaw('id_user = ?', [self::ID_ADMIN]))
+            ->query(new RawExpression('id_user = ?', [self::ID_ADMIN]))
             ->paginate()
         ;
         $this->assertCount(7, $result);
@@ -385,7 +385,7 @@ abstract class AbstractRepositoryTest extends DatabaseAwareQueryTest
         $result = $repository
             ->query([
                 'id_user' => self::ID_JEAN,
-                new ExpressionRaw('baz < ?', [new \DateTime("now -1 second")])
+                new RawExpression('baz < ?', [new \DateTime("now -1 second")])
             ])
             ->paginate()
             ->setLimit(10)

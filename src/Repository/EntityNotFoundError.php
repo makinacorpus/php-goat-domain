@@ -8,7 +8,6 @@ namespace Goat\Domain\Repository;
  * One or more entities could not be found in the database.
  *
  * @codeCoverageIgnore
- * @deprecated
  */
 class EntityNotFoundError extends \RuntimeException
 {

@@ -14,7 +14,6 @@ use Goat\Query\UpdateQuery;
  * Be aware that this can only write on a single relation at once.
  *
  * @codeCoverageIgnore
- * @deprecated
  */
 interface WritableRepositoryInterface extends RepositoryInterface
 {
