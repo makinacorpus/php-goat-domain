@@ -43,7 +43,15 @@ class WritableDefaultRepository extends DefaultRepository implements WritableRep
             ->values($values)
         ;
 
-        $this->configureQueryForHydrationViaReturning($query);
+        // As we can't easily perform a join on an insert with returning query,
+        // we just return primary key columns and we're gonna find
+        // that freshly created instance.
+        // $this->configureQueryForHydrationViaReturning($query);
+        $this->appendColumnsToReturning(
+            $query,
+            $this->getPrimaryKey(),
+            $this->getTable()->getName()
+        );
 
         $result = $query->execute();
 
@@ -51,7 +59,7 @@ class WritableDefaultRepository extends DefaultRepository implements WritableRep
             throw new EntityNotFoundError(\sprintf("entity counld not be created"));
         }
 
-        return $result->fetch();
+        return $this->findOne($result->fetch());
     }
 
     /**
@@ -65,8 +73,15 @@ class WritableDefaultRepository extends DefaultRepository implements WritableRep
             )
         ;
 
-        // @todo deal with runner that don't support returning
-        $this->configureQueryForHydrationViaReturning($query);
+        // As we can't easily perform a left join on an update with returning query,
+        // we just return primary key columns and we're gonna find
+        // that freshly created instance.
+        // $this->configureQueryForHydrationViaReturning($query);
+        $this->appendColumnsToReturning(
+            $query,
+            $this->getPrimaryKey(),
+            ($relation = $this->getTable())->getAlias() ?? $relation->getName()
+        );
 
         $result = $query->execute();
 
@@ -101,8 +116,15 @@ class WritableDefaultRepository extends DefaultRepository implements WritableRep
             ->sets($values)
         ;
 
-        // @todo deal with runner that don't support returning
-        $this->configureQueryForHydrationViaReturning($query);
+        // As we can't easily perform a left join on an update with returning query,
+        // we just return primary key columns and we're gonna find
+        // that freshly created instance.
+        // $this->configureQueryForHydrationViaReturning($query);
+        $this->appendColumnsToReturning(
+            $query,
+            $this->getPrimaryKey(),
+            ($relation = $this->getTable())->getAlias() ?? $relation->getName()
+        );
 
         $result = $query->execute();
 
@@ -120,7 +142,7 @@ class WritableDefaultRepository extends DefaultRepository implements WritableRep
             // @codeCoverageIgnoreEnd
         }
 
-        return $result->fetch();
+        return $this->findOne($result->fetch());
     }
 
     /**
