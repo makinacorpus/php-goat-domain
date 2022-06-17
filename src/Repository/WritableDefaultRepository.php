@@ -4,15 +4,14 @@ declare(strict_types=1);
 
 namespace Goat\Domain\Repository;
 
+use Goat\Domain\Repository\Error\RepositoryEntityNotFoundError;
 use Goat\Query\DeleteQuery;
 use Goat\Query\InsertQuery;
 use Goat\Query\Query;
 use Goat\Query\UpdateQuery;
 
 /**
- * Default implementation for the writable repository.
- *
- * @codeCoverageIgnore
+ * Default implementation for the writable repository
  */
 class WritableDefaultRepository extends DefaultRepository implements WritableRepositoryInterface
 {
@@ -53,10 +52,10 @@ class WritableDefaultRepository extends DefaultRepository implements WritableRep
             $this->getTable()->getName()
         );
 
-        $result = $query->execute();
+        $result = $query->execute()->setHydrator($this->getHydrator());
 
         if (1 < $result->countRows()) {
-            throw new EntityNotFoundError(\sprintf("entity counld not be created"));
+            throw new RepositoryEntityNotFoundError(\sprintf("entity counld not be created"));
         }
 
         return $this->findOne($result->fetch());
@@ -67,11 +66,7 @@ class WritableDefaultRepository extends DefaultRepository implements WritableRep
      */
     public function delete($id, bool $raiseErrorOnMissing = false)
     {
-        $query = $this
-            ->createDelete(
-                $this->expandPrimaryKey($id)
-            )
-        ;
+        $query = $this->createDelete($this->expandPrimaryKey($id));
 
         // As we can't easily perform a left join on an update with returning query,
         // we just return primary key columns and we're gonna find
@@ -83,12 +78,12 @@ class WritableDefaultRepository extends DefaultRepository implements WritableRep
             ($relation = $this->getTable())->getAlias() ?? $relation->getName()
         );
 
-        $result = $query->execute();
+        $result = $query->execute()->setHydrator($this->getHydrator());
 
         $affected = $result->countRows();
         if ($raiseErrorOnMissing) {
             if (1 < $affected) {
-                throw new EntityNotFoundError(\sprintf("updated entity does not exist"));
+                throw new RepositoryEntityNotFoundError(\sprintf("updated entity does not exist"));
             }
             if (1 > $affected) {
                 // @codeCoverageIgnoreStart
@@ -96,7 +91,7 @@ class WritableDefaultRepository extends DefaultRepository implements WritableRep
                 // select query, or a deficient database (for example MySQL) that
                 // which under circumstances may break ACID properties of your data
                 // and allow duplicate inserts into tables.
-                throw new EntityNotFoundError(\sprintf("update affected more than one row"));
+                throw new RepositoryEntityNotFoundError(\sprintf("update affected more than one row"));
                 // @codeCoverageIgnoreEnd
             }
         }
@@ -109,12 +104,7 @@ class WritableDefaultRepository extends DefaultRepository implements WritableRep
      */
     public function update($id, array $values)
     {
-        $query = $this
-            ->createUpdate(
-                $this->expandPrimaryKey($id)
-            )
-            ->sets($values)
-        ;
+        $query = $this->createUpdate($this->expandPrimaryKey($id))->sets($values);
 
         // As we can't easily perform a left join on an update with returning query,
         // we just return primary key columns and we're gonna find
@@ -126,11 +116,11 @@ class WritableDefaultRepository extends DefaultRepository implements WritableRep
             ($relation = $this->getTable())->getAlias() ?? $relation->getName()
         );
 
-        $result = $query->execute();
+        $result = $query->execute()->setHydrator($this->getHydrator());
 
         $affected = $result->countRows();
         if (1 < $affected) {
-            throw new EntityNotFoundError(\sprintf("updated entity does not exist"));
+            throw new RepositoryEntityNotFoundError(\sprintf("updated entity does not exist"));
         }
         if (1 > $affected) {
             // @codeCoverageIgnoreStart
@@ -138,7 +128,7 @@ class WritableDefaultRepository extends DefaultRepository implements WritableRep
             // select query, or a deficient database (for example MySQL) that
             // which under circumstances may break ACID properties of your data
             // and allow duplicate inserts into tables.
-            throw new EntityNotFoundError(\sprintf("update affected more than one row"));
+            throw new RepositoryEntityNotFoundError(\sprintf("update affected more than one row"));
             // @codeCoverageIgnoreEnd
         }
 

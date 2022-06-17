@@ -1,0 +1,223 @@
+#
+# Goat various components configuration.
+#
+# This file explicits all existing configuration parameters, all values
+# documented within this file are set to defaults, except for normalization
+# and preferences example values.
+#
+goat:
+
+    dispatcher:
+        #
+        # Enable the custom event dispatcher.
+        #
+        enabled: false
+
+        #
+        # Logging emit debug log messages on message entry and exit into and
+        # from the bus, useful for debugging purpose.
+        #
+        with_logging: true
+
+        #
+        # Set this to true to enable concurrent processing of the same command
+        # enabled.
+        #
+        # This will only block concurrent processing of commands implementing the
+        # \Goat\Dispatcher\Message\UnparallelizableMessage interface.
+        #
+        with_lock: false
+
+        #
+        # Set this to plug event store on the dispatcher: every processed
+        # command will be stored into the event store.
+        #
+        # Use this if your application does not segregate commands vs domain
+        # events (CQS but not CQRS) and you wish to log every incomming command
+        # and their execution status in your system.
+        #
+        # If event store is not enabled, this will raise errors.
+        #
+        with_event_store: false
+
+        #
+        # Profiling simply store command process time in milliseconds within
+        # the message envelope properties.
+        #
+        # If you plug the event store altogether, timings will be stored in the
+        # event store stored event properties as well, allowing you to analyze
+        # performance restrospectively.
+        #
+        with_profiling: true
+
+        #
+        # Retry logic will attempt to guess if a message is suitable for retry
+        # in case of failure (for example, SQL serialization errors should be
+        # retried).
+        #
+        # It will work only on messages that are asynchronously dispatched, not
+        # for synchronously processed messages, to avoid UI glitches.
+        #
+        # Retry logic can be customized by decorating or replacing the
+        # 'goat.dispatcher.retry_strategy' service.
+        #
+        with_retry: true
+
+        #
+        # Enable transaction support.
+        #
+        # Transaction will decorate all other dispatcher decorators, hence
+        # they will be all or nothing (including event store). In case of any
+        # failure, everything will be rollbacked.
+        #
+        # Default transaction level is SERIALIZABLE (level 4), beware of the
+        # potential performance impact.
+        #
+        with_transaction: true
+
+    event_store:
+        #
+        # Enable the event store.
+        #
+        # By itself, this setting doesn't do anything except registering the
+        # event store service into the container.
+        #
+        enabled: false
+
+    lock:
+        #
+        # Enable the lock service.
+        #
+        enabled: false
+
+    message_broker:
+        #
+        # Enable the message broker service.
+        #
+        enabled: false
+
+    monolog:
+        #
+        # Registers a custom monolog  formatter that will add process PID to
+        # log output lines.
+        #
+        log_pid: true
+
+        #
+        # Force monolog to include stack traces into logs when appliable.
+        # Set this to true implies we harcode within container configuration the
+        # \Monolog\Formatter\LineFormatter::includeStacktraces() method call to
+        # enable exception stack trace collection.
+        #
+        always_log_stacktrace: false
+
+    normalization:
+        #
+        # PHP native type to normalized type name
+        #
+        # This is one very important yet missing symfony/serializer feature:
+        #
+        #   - While you code will evolve upon time passing, at some point you
+        #     will eventually end up renaming your classes, or moving them
+        #     around in other namespaces, this allows you to map legacy names.
+        # 
+        #   - While your platform evolve, and you start plugging new external
+        #     components on the same message broker, you may want at some point
+        #     want to normalize event names to a semantic business-relative
+        #     codified names.
+        #
+        # In both cases, it decorates the symfony/serializer component and
+        # transparently convert incomming normalized names to PHP native types
+        # to avoid it exploding upon missing classes. It also removes you the
+        # pain of developping custom normalizers after each code modification
+        # you do.
+        #
+        # This maps incomming normalized names to PHP types, but it also serve
+        # the same purpose the other way arround, you MUST NOT put duplicates
+        # in there, use the 'aliases' option key for duplicates.
+        #
+
+        default_strategy:
+            #
+            # Default name mapping strategy configuration.
+            #
+            # Per default the "PrefixNameMappingStrategy" is used, which means
+            # that you need to give an application name prefix string, which will
+            # be all normalized names prefix, and a PHP class namespace prefix
+            # that will identify which PHP classes belongs to you or not.
+            #
+            # Per default the app name is "App" and the namespace prefix is
+            # "App" as well, to mimic default Symfony skeleton app.
+            #
+            app_name: MyApp
+            class_prefix: MyVendor\\MyApp
+
+        strategy:
+            #
+            # Keys here are \Goat\Normalization\NameMap::CONTEXT_* constants
+            # values, but they can be anything else, those consttants are only
+            # here for convenience.
+            #
+            # Values must be container services identifiers.
+            #
+            command: \App\Goat\Normalization\CustomCommandNameMappingStrategy
+            event: \App\Goat\Normalization\CustomEventNameMappingStrategy
+
+        static:
+            #
+            # Keys here are \Goat\Normalization\NameMap::CONTEXT_* constants
+            # values, but they can be anything else, those consttants are only
+            # here for convenience.
+            #
+            command:
+                #
+                # Actual logical name to PHP class name conversion.
+                #
+                map:
+                    Php\Native\Type: my_app.normalized_name
+                    Php\Other\Native\Type: my_app.other_normalized_name
+
+                #
+                # Legacy aliases to PHP class name conversion.
+                #
+                aliases:
+                    Php\Legacy\Name: Php\Native\Type
+                    Php\EvenMoreLegacy\Name: Php\Native\Type
+                    my_app.legacy_normalized_name: Php\Native\Type
+                    my_app.other_legacy_normalized_name: my_app.normalized_name
+
+    preferences:
+        #
+        # Preferences - a key-value/registry like user configuration storage
+        # that restitutes values as environement variable in your container.
+        #
+        enabled: false
+
+        #
+        # Define a schema.
+        #
+        # If you remove this, all repositories will work in YOLO mode, meaning
+        # nothing will ever be validated not even value types, you may then use
+        # this API for arbitrary value storage.
+        #
+        # In the opposite, by defining a schema, you enable type and allowed
+        # values validation for what is going to be stored, and also enable
+        # the PreferenceSchema component in your container, allowing you to
+        # dynamically build forms.
+        #
+        schema:
+            #
+            # Complete variable definition example.
+            #
+            app_domain_some_variable:
+                label: Some variable
+                description: Uncheck this value to deactive this feature
+                type: bool
+                collection: false
+                default: true
+
+            #
+            # Incomplete (using defaults) variable definition example.
+            #
+            app_other_variable:
+                # ... all values here are optional

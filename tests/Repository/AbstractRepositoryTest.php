@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace Goat\Domain\Tests\Repository;
 
-use Goat\Domain\Repository\EntityNotFoundError;
-use Goat\Domain\Repository\GoatRepositoryInterface;
+use Goat\Domain\Repository\RepositoryInterface;
 use Goat\Domain\Repository\WritableRepositoryInterface;
+use Goat\Domain\Repository\Error\RepositoryEntityNotFoundError;
+use Goat\Query\ExpressionRaw;
 use Goat\Query\QueryError;
 use Goat\Query\Where;
-use Goat\Query\Expression\RawExpression;
 use Goat\Runner\DatabaseError;
 use Goat\Runner\Runner;
 use Goat\Runner\Testing\DatabaseAwareQueryTest;
@@ -104,10 +104,8 @@ abstract class AbstractRepositoryTest extends DatabaseAwareQueryTest
      *   Object class to use for hydrators
      * @param string[] $primaryKey
      *   Entity primary key definition
-     *
-     * @return GoatRepositoryInterface
      */
-    abstract protected function createRepository(Runner $runner, string $class, array $primaryKey): GoatRepositoryInterface;
+    abstract protected function createRepository(Runner $runner, string $class, array $primaryKey): RepositoryInterface;
 
     /**
      * Create writable repository to test
@@ -133,16 +131,16 @@ abstract class AbstractRepositoryTest extends DatabaseAwareQueryTest
         $runner = $factory->getRunner();
 
         $repository = $this->createRepository($runner, DomainModelObject::class, ['t.id']);
-        $relation = $repository->getTable();
-        $this->assertSame('some_entity', $relation->getName());
-        $this->assertSame('t', $relation->getAlias());
+        $table = $repository->getTable();
+        $this->assertSame('some_entity', $table->getName());
+        $this->assertSame('t', $table->getAlias());
         $this->assertSame(DomainModelObject::class, $repository->getClassName());
         $this->assertSame($runner, $repository->getRunner());
 
         $repository = $this->createWritableRepository($runner, DomainModelObject::class, ['t.id']);
-        $relation = $repository->getTable();
-        $this->assertSame('some_entity', $relation->getName());
-        $this->assertSame('t', $relation->getAlias());
+        $table = $repository->getTable();
+        $this->assertSame('some_entity', $table->getName());
+        $this->assertSame('t', $table->getAlias());
         $this->assertSame(DomainModelObject::class, $repository->getClassName());
         $this->assertSame($runner, $repository->getRunner());
     }
@@ -216,7 +214,7 @@ abstract class AbstractRepositoryTest extends DatabaseAwareQueryTest
         try {
             $repository->findFirst(['id_user' => -1], true);
             $this->fail();
-        } catch (EntityNotFoundError $e) {
+        } catch (RepositoryEntityNotFoundError $e) {
         }
     }
 
@@ -270,7 +268,7 @@ abstract class AbstractRepositoryTest extends DatabaseAwareQueryTest
         }
 
         // Using a single expression
-        $result = $repository->query(new RawExpression('id_user = ?', [self::ID_ADMIN]))->execute();
+        $result = $repository->query(new ExpressionRaw('id_user = ?', [self::ID_ADMIN]))->execute();
         $this->assertCount(7, $result);
         foreach ($result as $item) {
             $this->assertTrue($item instanceof DomainModelObject);
@@ -295,7 +293,7 @@ abstract class AbstractRepositoryTest extends DatabaseAwareQueryTest
         $result = $repository
             ->query([
                 'id_user' => self::ID_JEAN,
-                new RawExpression('baz < ?', [new \DateTime("now -1 second")])
+                new ExpressionRaw('baz < ?', [new \DateTime("now -1 second")])
             ])
             ->execute()
         ;
@@ -349,7 +347,7 @@ abstract class AbstractRepositoryTest extends DatabaseAwareQueryTest
 
         // Using a single expression
         $result = $repository
-            ->query(new RawExpression('id_user = ?', [self::ID_ADMIN]))
+            ->query(new ExpressionRaw('id_user = ?', [self::ID_ADMIN]))
             ->paginate()
         ;
         $this->assertCount(7, $result);
@@ -385,7 +383,7 @@ abstract class AbstractRepositoryTest extends DatabaseAwareQueryTest
         $result = $repository
             ->query([
                 'id_user' => self::ID_JEAN,
-                new RawExpression('baz < ?', [new \DateTime("now -1 second")])
+                new ExpressionRaw('baz < ?', [new \DateTime("now -1 second")])
             ])
             ->paginate()
             ->setLimit(10)

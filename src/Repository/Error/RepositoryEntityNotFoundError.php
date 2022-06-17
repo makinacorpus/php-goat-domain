@@ -2,22 +2,13 @@
 
 declare(strict_types=1);
 
-namespace Goat\Domain\Repository;
+namespace Goat\Domain\Repository\Error;
 
 /**
  * One or more entities could not be found in the database.
- *
- * @codeCoverageIgnore
  */
-class EntityNotFoundError extends \RuntimeException
+class RepositoryEntityNotFoundError extends \RuntimeException implements RepositoryError
 {
-    /**
-     * Default constructor
-     *
-     * @param string $message
-     * @param int $code
-     * @param \Throwable $previous
-     */
     public function __construct(?string $message = null, ?int $code = null, ?\Throwable $previous = null)
     {
         if (!$message) {

@@ -5,17 +5,13 @@ declare(strict_types=1);
 namespace Goat\Domain\Repository;
 
 /**
- * @codeCoverageIgnore
+ * @deprecated
+ *   Will be replaced by a more robust implementation.
  */
 interface LazyProperty
 {
     /**
-     * @param callable|iterable $initializer
-     */
-    public function __construct($initializer);
-
-    /**
-     * Get the real value behind
+     * Get the real value behind.
      */
     public function unwrap();
 }

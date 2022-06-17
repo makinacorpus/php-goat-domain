@@ -47,15 +47,20 @@
         "makinacorpus/goat-hydrator": "*"
     },
     "require" : {
-        "makinacorpus/goat-query": "^2.1.7 || ^3.0 || ^4.0",
+        "makinacorpus/goat-query": "^3.0 || ^4.0",
         "php" : ">=7.4",
         "ramsey/uuid": "^3.8 || ^4.0"
     },
     "require-dev" : {
+        "doctrine/annotations": "^1.13",
         "makinacorpus/generated-hydrator-bundle": "^1.0@alpha",
         "makinacorpus/goat-query-bundle": ">=2.0",
+        "ocramius/generated-hydrator": "^3.0 || ^4.0",
         "phpunit/phpunit": "^9",
-        "ocramius/generated-hydrator": "^3",
-        "psr/log": "^1"
+        "psr/log": "^1",
+        "symfony/config": "^5.4 || ^6.0",
+        "symfony/dependency-injection": "^5.4 || ^6.0",
+        "symfony/http-kernel": "^5.4 || ^6.0",
+        "symfony/yaml": "^5.4 || ^6.0"
     }
 }

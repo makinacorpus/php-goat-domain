@@ -5,7 +5,8 @@ declare(strict_types=1);
 namespace Goat\Domain\Repository;
 
 /**
- * @codeCoverageIgnore
+ * @deprecated
+ *   Will be replaced by ghost object proxies later.
  */
 final class DefaultLazyProperty implements LazyProperty
 {

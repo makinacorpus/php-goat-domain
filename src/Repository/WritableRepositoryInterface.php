@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Goat\Domain\Repository;
 
+use Goat\Domain\Repository\Error\RepositoryEntityNotFoundError;
 use Goat\Query\DeleteQuery;
 use Goat\Query\InsertQuery;
 use Goat\Query\UpdateQuery;
@@ -12,8 +13,6 @@ use Goat\Query\UpdateQuery;
  * Add update and insert functions to repositories.
  *
  * Be aware that this can only write on a single relation at once.
- *
- * @codeCoverageIgnore
  */
 interface WritableRepositoryInterface extends RepositoryInterface
 {
@@ -39,7 +38,7 @@ interface WritableRepositoryInterface extends RepositoryInterface
      * @return mixed
      *   The updated entity
      *
-     * @throws EntityNotFoundError
+     * @throws RepositoryEntityNotFoundError
      *   If the entity does not exists and $throwIfNotExists is true
      */
     public function delete($id, bool $raiseErrorOnMissing = false);
@@ -55,7 +54,7 @@ interface WritableRepositoryInterface extends RepositoryInterface
      * @return mixed
      *   The updated entity
      *
-     * @throws EntityNotFoundError
+     * @throws RepositoryEntityNotFoundError
      *   If the entity does not exists
      */
     public function update($id, array $values);
