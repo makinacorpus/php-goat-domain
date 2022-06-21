@@ -6,11 +6,10 @@ namespace Goat\Domain\Repository\Hydration;
 
 use Goat\Domain\Repository\DefaultLazyProperty;
 use Goat\Domain\Repository\LazyProperty;
+use Goat\Domain\Repository\RepositoryInterface;
 use Goat\Domain\Repository\Collection\ArrayCollection;
 use Goat\Domain\Repository\Collection\Collection;
-use Goat\Domain\Repository\Definition\RepositoryDefinition;
-use Goat\Domain\Repository\Hydration\ClassHydratorRegistry\DefaultClassHydratorRegistry;
-use Goat\Driver\Runner\AbstractRunner;
+use Goat\Domain\Repository\Repository\AbstractRepository;
 use Goat\Runner\Hydrator\HydratorRegistry;
 
 /**
@@ -18,46 +17,30 @@ use Goat\Runner\Hydrator\HydratorRegistry;
  */
 class RepositoryHydrator
 {
-    private ClassHydratorRegistry $classHydratorRegistry;
+    private HydratorRegistry $hydratorRegistry;
 
-    public function __construct(?ClassHydratorRegistry $classHydratorRegistry = null)
+    public function __construct(HydratorRegistry $hydratorRegistry)
     {
-        $this->classHydratorRegistry = $classHydratorRegistry ?? new DefaultClassHydratorRegistry();
+        $this->hydratorRegistry = $hydratorRegistry;
     }
 
     /**
      * Create raw values hydrator.
      */
-    public function createHydrator(RepositoryDefinition $repositoryDefinition, /* callable */ $normalizer = null): callable
+    public function createHydrator(RepositoryInterface $repository, /* callable */ $normalizer = null): callable
     {
-        $hydrator = null;
+        $definition = $repository->getRepositoryDefinition();
+        $hydrator = $this->hydratorRegistry->getHydrator($definition->getEntityClassName());
 
-        // Very ugly code that will build up an hydrator using the internal
-        // goat query runner hydrator. Ideally, we should get rid of this
-        // dependency to ocramius/generated-hydrator.
-        $runner = $this->runner;
-        if ($runner instanceof AbstractRunner) {
-            $scopeStealer = \Closure::bind(
-                function () {
-                    return $this->getHydratorRegistry();
-                },
-                $runner,
-                AbstractRunner::class
-            );
-            $hydratorRegistry = $scopeStealer();
-            if ($hydratorRegistry instanceof HydratorRegistry) {
-                $hydrator = $hydratorRegistry->getHydrator($this->getClassName());
-            }
+        // Validation first.
+        if (!$definition->hasDatabasePrimaryKey()) {
+            throw new \InvalidArgumentException("Default hydration process requires that the repository defines a primary key.");
         }
-        if (!$hydrator) {
-            throw new \InvalidArgumentException("Cannot hydrate or extract instance date without an hydrator.");
-        }
+        $primaryKey = $definition->getDatabasePrimaryKey();
 
         // Backward compatility layer in the next line.
         if ($normalizer) {
             $normalizer = $this->userDefinedNormalizerNormalize($normalizer);
-        } else {
-            $normalizer = fn ($value) => $value;
         }
 
         // Build lazy property hydrators. Both createLazyCollection() and
@@ -65,28 +48,48 @@ class RepositoryHydrator
         // to a callback using the ResultRow class as argument, for easier key
         // extraction from values.
         $lazyProperties = [];
-        if ($collectionMapping = $this->defineLazyCollectionMapping()) {
-            foreach ($collectionMapping as $propertyName => $initializer) {
-                $lazyProperties[$propertyName] = $this->createLazyCollection($initializer);
-            }
-        }
-        if ($propertyMapping = $this->defineLazyPropertyMapping()) {
-            foreach ($propertyMapping as $propertyName => $initializer) {
-                $lazyProperties[$propertyName] = $this->createLazyProperty($initializer);
-            }
-        }
 
-        $definition = $this->getRepositoryDefinition();
-        if (!$definition->hasDatabasePrimaryKey()) {
-            throw new \InvalidArgumentException("Default hydration process requires that the repository defines a primary key.");
+        // Ugly hack until we do best.
+        if ($repository instanceof AbstractRepository) {
+            $collectionMapping = (\Closure::bind(
+                fn () => $this->defineLazyCollectionMapping(),
+                $repository,
+                AbstractRepository::class
+            ))();
+
+            if ($collectionMapping) {
+                foreach ($collectionMapping as $propertyName => $initializer) {
+                    $lazyProperties[$propertyName] = $this->createLazyCollection($repository, $initializer);
+                }
+            }
+
+            $propertyMapping = (\Closure::bind(
+                fn () => $this->defineLazyPropertyMapping(),
+                $repository,
+                AbstractRepository::class
+            ))();
+
+            if ($propertyMapping) {
+                foreach ($propertyMapping as $propertyName => $initializer) {
+                    $lazyProperties[$propertyName] = $this->createLazyProperty($repository, $initializer);
+                }
+            }
         }
-        $primaryKey = $definition->getDatabasePrimaryKey();
 
         if ($lazyProperties) {
+            if ($normalizer) {
+                return function (array $values) use ($lazyProperties, $primaryKey, $hydrator, $normalizer) {
+                    $values = new ResultRow($primaryKey, $values);
+                    $normalizer($values);
+                    foreach ($lazyProperties as $propertyName => $callback) {
+                        $values->set($propertyName, $callback($values));
+                    }
+                    return $hydrator($values->toArray());
+                };
+            }
+
             return function (array $values) use ($lazyProperties, $primaryKey, $hydrator, $normalizer) {
                 $values = new ResultRow($primaryKey, $values);
-                $normalizer($values);
-                // Call all lazy property hydrators.
                 foreach ($lazyProperties as $propertyName => $callback) {
                     $values->set($propertyName, $callback($values));
                 }
@@ -94,25 +97,26 @@ class RepositoryHydrator
             };
         }
 
-        return static function (array $values) use ($normalizer, $hydrator, $primaryKey) {
-            $values = new ResultRow($primaryKey, $values);
-            $normalizer($values);
+        if ($normalizer) {
+            return static function (array $values) use ($normalizer, $hydrator, $primaryKey) {
+                $values = new ResultRow($primaryKey, $values);
+                $normalizer($values);
+                return $hydrator($values->toArray());
+            };
+        }
 
-            // Hydrator gets an array as of now because it is implemented
-            // outside of this API.
-            return $hydrator($values->toArray());
-        };
+        return $hydrator;
     }
 
     /**
      * Create a lazy collection wrapper for method.
      */
-    private function createLazyCollection($callback): callable
+    private function createLazyCollection(RepositoryInterface $repository, $callback): callable
     {
         if (\is_callable($callback)) {
             $callback = \Closure::fromCallable($callback);
-        } else if (\method_exists($this, $callback)) {
-            $callback = \Closure::fromCallable([$this, $callback]);
+        } else if (\method_exists($repository, $callback)) {
+            $callback = \Closure::fromCallable([$repository, $callback]);
         } else {
             throw new \InvalidArgumentException("Lazy collection initializer must be a callable or a repository method name.");
         }
@@ -157,12 +161,12 @@ class RepositoryHydrator
     /**
      * Create a lazy property wrapper for method.
      */
-    private function createLazyProperty($callback): callable
+    private function createLazyProperty(RepositoryInterface $repository, $callback): callable
     {
         if (\is_callable($callback)) {
             $callback = \Closure::fromCallable($callback);
-        } else if (\method_exists($this, $callback)) {
-            $callback = \Closure::fromCallable([$this, $callback]);
+        } else if (\method_exists($repository, $callback)) {
+            $callback = \Closure::fromCallable([$repository, $callback]);
         } else {
             throw new \InvalidArgumentException("Lazy collection initializer must be a callable or a repository method name.");
         }

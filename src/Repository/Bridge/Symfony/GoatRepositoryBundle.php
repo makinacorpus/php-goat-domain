@@ -7,6 +7,8 @@ namespace Goat\Domain\Repository\Bridge\Symfony;
 use Goat\Domain\Repository\RepositoryInterface;
 use Goat\Domain\Repository\Bridge\Symfony\DependencyInjection\GoatRepositoryExtension;
 use Goat\Domain\Repository\Bridge\Symfony\DependencyInjection\Compiler\RepositoryRegistryRegisterPass;
+use Goat\Domain\Repository\Hydration\RepositoryHydrator;
+use Goat\Domain\Repository\Hydration\RepositoryHydratorAware;
 use Goat\Domain\Repository\Registry\RepositoryRegistry;
 use Goat\Domain\Repository\Registry\RepositoryRegistryAware;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
@@ -25,19 +27,21 @@ final class GoatRepositoryBundle extends Bundle
     public function build(ContainerBuilder $container)
     {
         // Repository registry magic.
-        $container->addCompilerPass(new RepositoryRegistryRegisterPass());
         $container
             ->registerForAutoconfiguration(RepositoryRegistryAware::class)
             ->addTag('goat.domain.repository.registry.aware')
+            ->addMethodCall('setRepositoryRegistry', [new Reference(RepositoryRegistry::class)])
+        ;
+        $container
+            ->registerForAutoconfiguration(RepositoryHydratorAware::class)
+            ->addTag('goat.domain.repository.hydrator.aware')
+            ->addMethodCall('setRepositoryHydrator', [new Reference(RepositoryHydrator::class)])
         ;
         $container
             ->registerForAutoconfiguration(RepositoryInterface::class)
             ->addTag('goat.domain.repository')
         ;
-        $container
-            ->registerForAutoconfiguration(RepositoryInterface::class)
-            ->addMethodCall('setRepositoryRegistry', [new Reference(RepositoryRegistry::class)])
-        ;
+        $container->addCompilerPass(new RepositoryRegistryRegisterPass());
     }
 
     /**

@@ -123,7 +123,7 @@ abstract class AbstractDefinitionRepository extends AbstractRepository
             } else {
                 if (\is_object($column)) {
                     // @todo
-                    //   This can be ExpressionRaw instances, case in which
+                    //   This can be RawExpression instances, case in which
                     //   we probably need to convert it to something else,
                     //   such as a DatabaseExpression maybe?
                 } else {

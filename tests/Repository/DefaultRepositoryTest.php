@@ -8,7 +8,7 @@ use Goat\Domain\Repository\DefaultRepository;
 use Goat\Domain\Repository\RepositoryInterface;
 use Goat\Domain\Repository\WritableDefaultRepository;
 use Goat\Domain\Repository\WritableRepositoryInterface;
-use Goat\Query\ExpressionRelation;
+use Goat\Query\Expression\TableExpression;
 use Goat\Runner\Runner;
 
 class DefaultRepositoryTest extends AbstractRepositoryTest
@@ -32,7 +32,7 @@ class DefaultRepositoryTest extends AbstractRepositoryTest
 
             public function __construct(Runner $runner, array $primaryKey, $class)
             {
-                parent::__construct($runner, $primaryKey, ExpressionRelation::create('some_entity', 't'));
+                parent::__construct($runner, $primaryKey, new TableExpression('some_entity', 't'));
 
                 $this->testProvidedClass = $class;
             }
@@ -80,7 +80,7 @@ class DefaultRepositoryTest extends AbstractRepositoryTest
 
             public function __construct(Runner $runner, array $primaryKey, $class)
             {
-                parent::__construct($runner, $primaryKey, ExpressionRelation::create('some_entity', 't'));
+                parent::__construct($runner, $primaryKey, new TableExpression('some_entity', 't'));
 
                 $this->testProvidedClass = $class;
             }

@@ -21,7 +21,6 @@ final class GoatRepositoryExtension extends Extension
 
         $loader = new YamlFileLoader($container, new FileLocator(\dirname(__DIR__).'/Resources/config'));
         $loader->load('domain.yaml');
-
     }
 
     /**

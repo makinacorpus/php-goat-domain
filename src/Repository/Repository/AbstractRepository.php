@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Goat\Domain\Repository\Repository;
 
+use Goat\Domain\Repository\Key;
 use Goat\Domain\Repository\RepositoryInterface;
 use Goat\Domain\Repository\Definition\DefinitionLoader;
 use Goat\Domain\Repository\Definition\RepositoryDefinition;
@@ -12,7 +13,7 @@ use Goat\Domain\Repository\Hydration\RepositoryHydratorAware;
 use Goat\Domain\Repository\Hydration\RepositoryHydratorAwareTrait;
 use Goat\Domain\Repository\Registry\RepositoryRegistryAware;
 use Goat\Domain\Repository\Registry\RepositoryRegistryAwareTrait;
-use Goat\Query\ExpressionRelation;
+use Goat\Query\Expression\TableExpression;
 
 /**
  * Repository base class that brings most of the non-database related
@@ -59,11 +60,11 @@ abstract class AbstractRepository implements RepositoryInterface, RepositoryHydr
     /**
      * Get table for queries.
      */
-    public function getTable(): ExpressionRelation
+    public function getTable(): TableExpression
     {
         $table = $this->getRepositoryDefinition()->getTableName();
 
-        return ExpressionRelation::create($table->getName(), $table->getAlias(), $table->getSchema());
+        return new TableExpression($table->getName(), $table->getAlias(), $table->getSchema());
     }
 
     /**
@@ -141,9 +142,9 @@ abstract class AbstractRepository implements RepositoryInterface, RepositoryHydr
      *   then a backward compatibility layer will provide an array instead,
      *   but this is unsupported and will be removed later.
      */
-    public function getHydratorNormalizer(): callable
+    public function getHydratorNormalizer(): ?callable
     {
-        return static fn ($values) => $values;
+        return null;
     }
 
     /**
@@ -154,7 +155,7 @@ abstract class AbstractRepository implements RepositoryInterface, RepositoryHydr
         return $this
             ->getRepositoryHydrator()
             ->createHydrator(
-                $this->getRepositoryDefinition(),
+                $this,
                 $this->getHydratorNormalizer()
             )
         ;

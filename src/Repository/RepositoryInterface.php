@@ -7,8 +7,8 @@ namespace Goat\Domain\Repository;
 use Goat\Domain\Repository\Definition\RepositoryDefinition;
 use Goat\Domain\Repository\Error\RepositoryEntityNotFoundError;
 use Goat\Query\SelectQuery;
+use Goat\Query\Expression\TableExpression;
 use Goat\Runner\Runner;
-use Goat\Query\ExpressionRelation;
 
 /**
  * Maps immutable entities on SQL projections, and provides a set of utilities
@@ -48,7 +48,7 @@ interface RepositoryInterface
      * @deprecated
      *   This should not be a public API since it's implementation dependant.
      */
-    public function getTable(): ExpressionRelation;
+    public function getTable(): TableExpression;
 
     /**
      * Create a select query based upon this repository definition.

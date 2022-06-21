@@ -8,7 +8,9 @@ use Goat\Domain\Repository\Error\RepositoryEntityNotFoundError;
 use Goat\Query\DeleteQuery;
 use Goat\Query\InsertQuery;
 use Goat\Query\Query;
+use Goat\Query\QueryError;
 use Goat\Query\UpdateQuery;
+use Goat\Query\Expression\ColumnExpression;
 
 /**
  * Default implementation for the writable repository
@@ -32,6 +34,25 @@ class WritableDefaultRepository extends DefaultRepository implements WritableRep
         $query->returning('*');
     }
 
+    protected function appendPrimaryKeyToReturning(Query $query, ?string $tableAlias = null): void
+    {
+        $definition = $this->getRepositoryDefinition();
+
+        if (!$definition->hasDatabasePrimaryKey()) {
+            throw new QueryError("Repository has no primary key defined.");
+        }
+
+        $primaryKey = $definition->getDatabasePrimaryKey();
+
+        if (!$tableAlias) {
+            $tableAlias = $this->getTable()->getName();
+        }
+
+        foreach ($primaryKey->getColumnNames() as $columnName) {
+            $query->returning(new ColumnExpression($columnName, $tableAlias));
+        }
+    }
+
     /**
      * {@inheritdoc}
      */
@@ -45,14 +66,9 @@ class WritableDefaultRepository extends DefaultRepository implements WritableRep
         // As we can't easily perform a join on an insert with returning query,
         // we just return primary key columns and we're gonna find
         // that freshly created instance.
-        // $this->configureQueryForHydrationViaReturning($query);
-        $this->appendColumnsToReturning(
-            $query,
-            $this->getPrimaryKey(),
-            $this->getTable()->getName()
-        );
+        $this->appendPrimaryKeyToReturning($query);
 
-        $result = $query->execute()->setHydrator($this->getHydrator());
+        $result = $query->execute()->setHydrator(fn (array $row) => $row);
 
         if (1 < $result->countRows()) {
             throw new RepositoryEntityNotFoundError(\sprintf("entity counld not be created"));
@@ -71,14 +87,8 @@ class WritableDefaultRepository extends DefaultRepository implements WritableRep
         // As we can't easily perform a left join on an update with returning query,
         // we just return primary key columns and we're gonna find
         // that freshly created instance.
-        // $this->configureQueryForHydrationViaReturning($query);
-        $this->appendColumnsToReturning(
-            $query,
-            $this->getPrimaryKey(),
-            ($relation = $this->getTable())->getAlias() ?? $relation->getName()
-        );
-
-        $result = $query->execute()->setHydrator($this->getHydrator());
+        $this->appendPrimaryKeyToReturning($query);
+        $result = $query->execute()->setHydrator(fn (array $row) => $row);
 
         $affected = $result->countRows();
         if ($raiseErrorOnMissing) {
@@ -109,14 +119,9 @@ class WritableDefaultRepository extends DefaultRepository implements WritableRep
         // As we can't easily perform a left join on an update with returning query,
         // we just return primary key columns and we're gonna find
         // that freshly created instance.
-        // $this->configureQueryForHydrationViaReturning($query);
-        $this->appendColumnsToReturning(
-            $query,
-            $this->getPrimaryKey(),
-            ($relation = $this->getTable())->getAlias() ?? $relation->getName()
-        );
+        $this->appendPrimaryKeyToReturning($query);
 
-        $result = $query->execute()->setHydrator($this->getHydrator());
+        $result = $query->execute()->setHydrator(fn (array $row) => $row);
 
         $affected = $result->countRows();
         if (1 < $affected) {

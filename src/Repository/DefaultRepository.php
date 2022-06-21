@@ -10,8 +10,6 @@ use Goat\Domain\Repository\Repository\AbstractDefinitionRepository;
 use Goat\Domain\Repository\Result\GoatQueryRepositoryResult;
 use Goat\Query\DeleteQuery;
 use Goat\Query\Expression;
-use Goat\Query\ExpressionColumn;
-use Goat\Query\ExpressionRelation;
 use Goat\Query\InsertQueryQuery;
 use Goat\Query\InsertValuesQuery;
 use Goat\Query\MergeQuery;
@@ -23,6 +21,7 @@ use Goat\Query\UpsertQueryQuery;
 use Goat\Query\UpsertValuesQuery;
 use Goat\Query\Where;
 use Goat\Query\Expression\ColumnExpression;
+use Goat\Query\Expression\TableExpression;
 use Goat\Runner\Runner;
 
 /**
@@ -41,7 +40,7 @@ class DefaultRepository extends AbstractDefinitionRepository
      *   Class that will be hydrated
      * @param string[] $primaryKey
      *   Column names that is the primary key
-     * @param string|ExpressionRelation $relation
+     * @param string|TableExpression $relation
      *   Relation, if a string, no schema nor alias will be used
      */
     public function __construct(Runner $runner, ?array $primaryKey = null, $table = null, ?string $tableAlias = null)
@@ -210,9 +209,9 @@ class DefaultRepository extends AbstractDefinitionRepository
             // deambiguation from the start, or if the API user was extra
             // precautionous.
             if (false === \strpos($column, '.')) {
-                $ret->condition(ExpressionColumn::create($column, $tableAlias), $value);
+                $ret->condition(new ColumnExpression($column, $tableAlias), $value);
             } else {
-                $ret->condition(ExpressionColumn::create($column), $value);
+                $ret->condition(new ColumnExpression($column), $value);
             }
         }
 
@@ -248,7 +247,7 @@ class DefaultRepository extends AbstractDefinitionRepository
                 \assert($column instanceof DatabaseColumn);
                 $columnTableAlias = $column->getTableName() ?? $tableAlias;
                 if ($columnTableAlias === $tableAlias) { // We do not support JOIN on returning, yet.
-                    $query->returning(new ExpressionColumn($column->getColumnName(), $tableAlias), $column->getPropertyName());
+                    $query->returning(new ColumnExpression($column->getColumnName(), $tableAlias), $column->getPropertyName());
                 }
             }
         }
@@ -258,12 +257,12 @@ class DefaultRepository extends AbstractDefinitionRepository
                 \assert($column instanceof DatabaseColumn);
                 $columnTableAlias = $column->getTableName() ?? $tableAlias;
                 if ($columnTableAlias === $tableAlias) { // We do not support JOIN on returning, yet.
-                    $query->returning(new ExpressionColumn($column->getColumnName(), $tableAlias), $column->getPropertyName());
+                    $query->returning(new ColumnExpression($column->getColumnName(), $tableAlias), $column->getPropertyName());
                 }
             }
         }
         if (!$some) {
-            $query->returning(new ExpressionColumn('*', $tableAlias));
+            $query->returning(new ColumnExpression('*', $tableAlias));
         }
 
         $query->setOption('hydrator', $this->getHydrator());

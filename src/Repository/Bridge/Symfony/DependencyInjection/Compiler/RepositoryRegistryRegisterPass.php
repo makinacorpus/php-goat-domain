@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Goat\Domain\Repository\Bridge\Symfony\DependencyInjection\Compiler;
 
-use Goat\Bridge\Symfony\DependencyInjection\ContainerRepositoryRegistry;
+use Goat\Domain\Repository\Bridge\Symfony\DependencyInjection\ContainerRepositoryRegistry;
 use Goat\Domain\Repository\Definition\ArrayRepositoryDefinition;
 use Goat\Domain\Repository\Definition\DefinitionLoader;
 use Goat\Domain\Repository\Error\RepositoryDefinitionNotFoundError;
@@ -82,6 +82,13 @@ final class RepositoryRegistryRegisterPass implements CompilerPassInterface
             $container
                 ->getDefinition($serviceId)
                 ->addMethodCall('setRepositoryRegistry', [new Reference('goat.domain.repository.registry')])
+            ;
+        }
+
+        foreach ($container->findTaggedServiceIds('goat.domain.repository.hydrator.aware', true) as $serviceId => $attributes) {
+            $container
+                ->getDefinition($serviceId)
+                ->addMethodCall('setRepositoryHydrator', [new Reference('goat.domain.repository.hydrator')])
             ;
         }
     }
