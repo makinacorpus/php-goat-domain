@@ -45,7 +45,8 @@ class WritableDefaultRepository extends DefaultRepository implements WritableRep
         $primaryKey = $definition->getDatabasePrimaryKey();
 
         if (!$tableAlias) {
-            $tableAlias = $this->getTable()->getName();
+            $table = $this->getTable();
+            $tableAlias = $table->getAlias() ?? $table->getName();
         }
 
         foreach ($primaryKey->getColumnNames() as $columnName) {
@@ -66,7 +67,9 @@ class WritableDefaultRepository extends DefaultRepository implements WritableRep
         // As we can't easily perform a join on an insert with returning query,
         // we just return primary key columns and we're gonna find
         // that freshly created instance.
-        $this->appendPrimaryKeyToReturning($query);
+        // INSERT can't alias table, so we need to return table name here,
+        // not table alias.
+        $this->appendPrimaryKeyToReturning($query, $this->getTable()->getName());
 
         $result = $query->execute()->setHydrator(fn (array $row) => $row);
 
