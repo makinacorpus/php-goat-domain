@@ -125,7 +125,7 @@ class DefaultRepository extends AbstractDefinitionRepository
         $orWhere = $select->getWhere()->or();
 
         foreach ($idList as $id) {
-            $orWhere->condition($this->expandPrimaryKey($id));
+            $orWhere->expression($this->expandPrimaryKey($id));
         }
 
         return new GoatQueryRepositoryResult($select->execute());
