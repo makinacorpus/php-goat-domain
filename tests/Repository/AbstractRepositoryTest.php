@@ -6,6 +6,7 @@ namespace Goat\Domain\Tests\Repository;
 
 use Goat\Domain\Repository\RepositoryInterface;
 use Goat\Domain\Repository\WritableRepositoryInterface;
+use Goat\Domain\Repository\Error\ConfigurationError;
 use Goat\Domain\Repository\Error\RepositoryEntityNotFoundError;
 use Goat\Query\QueryError;
 use Goat\Query\Where;
@@ -14,6 +15,9 @@ use Goat\Runner\DatabaseError;
 use Goat\Runner\Runner;
 use Goat\Runner\Testing\DatabaseAwareQueryTest;
 use Goat\Runner\Testing\TestDriverFactory;
+use Goat\Domain\Repository\Hydration\RepositoryHydratorAware;
+use Goat\Domain\Repository\Hydration\RepositoryHydrator;
+use Goat\Runner\Hydrator\DefaultHydratorRegistry;
 
 abstract class AbstractRepositoryTest extends DatabaseAwareQueryTest
 {
@@ -122,6 +126,27 @@ abstract class AbstractRepositoryTest extends DatabaseAwareQueryTest
     abstract protected function createWritableRepository(Runner $runner, string $class, array $primaryKey): WritableRepositoryInterface;
 
     /**
+     * Really create the repository to test.
+     */
+    private function doCreateRepository(Runner $runner, string $class, array $primaryKey): RepositoryInterface
+    {
+        $ret = $this->createRepository($runner, $class, $primaryKey);
+
+        try {
+            $ret->createInstance([]);
+        } catch (ConfigurationError $e) {
+            if ($ret instanceof RepositoryHydratorAware) {
+                $ret->setRepositoryHydrator(new RepositoryHydrator(new DefaultHydratorRegistry()));
+            }
+            self::markTestIncomplete("Repository could not be assigned a repository hydrator.");
+        } catch (\Throwable $e) {
+            // Pass.
+        }
+
+        return $ret;
+    }
+
+    /**
      * Tests various utility methods
      *
      * @dataProvider runnerDataProvider
@@ -130,7 +155,7 @@ abstract class AbstractRepositoryTest extends DatabaseAwareQueryTest
     {
         $runner = $factory->getRunner();
 
-        $repository = $this->createRepository($runner, DomainModelObject::class, ['t.id']);
+        $repository = $this->doCreateRepository($runner, DomainModelObject::class, ['t.id']);
         $table = $repository->getTable();
         $this->assertSame('some_entity', $table->getName());
         $this->assertSame('t', $table->getAlias());
@@ -154,7 +179,7 @@ abstract class AbstractRepositoryTest extends DatabaseAwareQueryTest
     {
         $runner = $factory->getRunner();
 
-        $repository = $this->createRepository($runner, DomainModelObject::class, ['t.id']);
+        $repository = $this->doCreateRepository($runner, DomainModelObject::class, ['t.id']);
 
         foreach ([1, [1]] as $id) {
             $item1 = $repository->findOne($id);
@@ -198,7 +223,7 @@ abstract class AbstractRepositoryTest extends DatabaseAwareQueryTest
     {
         $runner = $factory->getRunner();
 
-        $repository = $this->createRepository($runner, DomainModelObject::class, ['t.id']);
+        $repository = $this->doCreateRepository($runner, DomainModelObject::class, ['t.id']);
 
         $item1 = $repository->findFirst(['id_user' => self::ID_ADMIN]);
         $this->assertInstanceOf(DomainModelObject::class, $item1);
@@ -227,7 +252,7 @@ abstract class AbstractRepositoryTest extends DatabaseAwareQueryTest
     {
         $runner = $factory->getRunner();
 
-        $repository = $this->createRepository($runner, DomainModelObject::class, ['foo', 'status']);
+        $repository = $this->doCreateRepository($runner, DomainModelObject::class, ['foo', 'status']);
 
         $item1 = $repository->findOne([2, 1]);
         $this->assertTrue($item1 instanceof DomainModelObject);
@@ -254,7 +279,7 @@ abstract class AbstractRepositoryTest extends DatabaseAwareQueryTest
         $runner = $factory->getRunner();
 
         $supportsJoin = $this->supportsJoin();
-        $repository = $this->createRepository($runner, DomainModelObject::class, ['id']);
+        $repository = $this->doCreateRepository($runner, DomainModelObject::class, ['id']);
 
         // Most simple condition ever
         $result = $repository->query(['id_user' => self::ID_ADMIN])->execute();
@@ -325,7 +350,7 @@ abstract class AbstractRepositoryTest extends DatabaseAwareQueryTest
         $runner = $factory->getRunner();
 
         $supportsJoin = $this->supportsJoin();
-        $repository = $this->createRepository($runner, DomainModelObject::class, ['id']);
+        $repository = $this->doCreateRepository($runner, DomainModelObject::class, ['id']);
 
         // Most simple condition ever
         $result = $repository
