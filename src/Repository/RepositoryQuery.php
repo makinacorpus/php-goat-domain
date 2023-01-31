@@ -9,6 +9,7 @@ use Goat\Query\Query;
 use Goat\Query\QueryError;
 use Goat\Query\SelectQuery;
 use Goat\Query\Where;
+use Goat\Query\Expression\ColumnExpression;
 use Goat\Runner\QueryPagerResultIterator;
 use Goat\Runner\ResultIterator;
 
@@ -39,7 +40,7 @@ final class RepositoryQuery
      *
      * @return Where
      */
-    public static function expandCriteria($criteria): Where
+    public static function expandCriteria($criteria, ?string $tableAlias = null): Where
     {
         if (!$criteria) {
             return new Where();
@@ -58,18 +59,13 @@ final class RepositoryQuery
                 if (\is_int($column)) {
                     $where->expression($value);
                 } else {
+                    if ($tableAlias && \is_string($column) && false === \strpos($column, '.')) {
+                        $column = new ColumnExpression($column, $tableAlias);
+                    }
                     // Because repositories might attempt to join with other tables they can
                     // arbitrarily use a table alias for the main relation: user may not know
                     // it, and just use field names here - if no column alias is set,
                     // arbitrarily prefix them with the relation alias.
-                    // @todo
-                    //   - does it really worth it ?
-                    //   - if there is more than one alias, how to deal with
-                    //     the fact that user might want to filter using
-                    //     another column table ?
-                    //   - in the end, if ok with those questions, implement
-                    //     it and document it.
-
                     if (\is_null($value)) {
                         $where->isNull($column);
                     } else {

@@ -64,14 +64,15 @@ class DefaultRepository extends AbstractDefinitionRepository
     public function createSelect($criteria = null, bool $withColumns = true): SelectQuery
     {
         $table = $this->getTable();
+        $tableAlias = $table->getAlias() ?? $table->getName();
         $select = $this->getRunner()->getQueryBuilder()->select($table);
 
         if ($withColumns) {
-            $this->configureQueryForHydrationViaSelect($select, $table->getAlias() ?? $table->getName());
+            $this->configureQueryForHydrationViaSelect($select, $tableAlias);
         }
 
         if ($criteria) {
-            $select->where(RepositoryQuery::expandCriteria($criteria));
+            $select->where(RepositoryQuery::expandCriteria($criteria, $tableAlias));
         }
 
         return $select;
@@ -82,14 +83,17 @@ class DefaultRepository extends AbstractDefinitionRepository
      */
     public function exists($criteria): bool
     {
+        $table = $this->getTable();
+        $tableAlias = $table->getAlias() ?? $table->getName();
+
         $select = $this
             ->getRunner()
             ->getQueryBuilder()
-            ->select($this->getTable())
+            ->select($table)
             ->columnExpression('1')
         ;
 
-        $select->whereExpression(RepositoryQuery::expandCriteria($criteria));
+        $select->whereExpression(RepositoryQuery::expandCriteria($criteria, $tableAlias));
 
         return (bool)$select->range(1)->execute()->fetchField();
     }

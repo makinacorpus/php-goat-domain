@@ -148,10 +148,11 @@ class WritableDefaultRepository extends DefaultRepository implements WritableRep
      */
     public function createUpdate($criteria = null): UpdateQuery
     {
-        $update = $this->getRunner()->getQueryBuilder()->update($this->getTable());
+        $table = $this->getTable();
+        $update = $this->getRunner()->getQueryBuilder()->update($table);
 
         if ($criteria) {
-            $update->whereExpression(RepositoryQuery::expandCriteria($criteria));
+            $update->whereExpression(RepositoryQuery::expandCriteria($criteria, $table->getName()));
         }
 
         return $update;
@@ -162,10 +163,11 @@ class WritableDefaultRepository extends DefaultRepository implements WritableRep
      */
     public function createDelete($criteria = null): DeleteQuery
     {
-        $update = $this->getRunner()->getQueryBuilder()->delete($this->getTable());
+        $table = $this->getTable();
+        $update = $this->getRunner()->getQueryBuilder()->delete($table);
 
         if ($criteria) {
-            $update->whereExpression(RepositoryQuery::expandCriteria($criteria));
+            $update->whereExpression(RepositoryQuery::expandCriteria($criteria, $table->getName()));
         }
 
         return $update;
